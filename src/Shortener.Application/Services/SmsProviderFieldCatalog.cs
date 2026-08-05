@@ -15,6 +15,7 @@ public static class SmsProviderFieldCatalog
         "kavenegar" => [new ProviderField("ApiKey", "کلید API", true, true)],
         "melipayamak" => [new ProviderField("Username", "نام کاربری", true, true), new ProviderField("Password", "رمز عبور", true, true)],
         "farazsms" => [new ProviderField("Username", "نام کاربری", true, true), new ProviderField("Password", "رمز عبور", true, true)],
+        "afe" => [new ProviderField("Username", "نام کاربری", true, true), new ProviderField("Password", "رمز عبور", true, true)],
         "fake" => [],
         _ => [],
     };

@@ -110,6 +110,10 @@ public static class DbSeeder
             new() { Code = "kavenegar", Name = "Kavenegar", SupportsPattern = true, SupportsDlr = true, IsActive = true },
             new() { Code = "melipayamak", Name = "MeliPayamak", SupportsPattern = true, SupportsDlr = true, IsActive = true },
             new() { Code = "farazsms", Name = "Faraz SMS", SupportsPattern = true, SupportsDlr = true, IsActive = true },
+            // No pattern/token sending is confirmed for this provider. GetMessagesStatus is a real,
+            // confirmed SOAP operation (unlike before), so SupportsDlr is true even though the
+            // returned status vocabulary itself is still a best-effort guess (see AfeProvider's doc).
+            new() { Code = "afe", Name = "Afe.ir (واید)", SupportsPattern = false, SupportsDlr = true, IsActive = true },
             new() { Code = "fake", Name = "Fake (development only)", SupportsPattern = false, SupportsDlr = false, IsActive = true },
         ];
 

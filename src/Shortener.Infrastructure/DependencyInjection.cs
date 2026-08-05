@@ -95,6 +95,12 @@ public static class DependencyInjection
         services.AddHttpClient(SmsHttpClientNames.FarazSms, c => c.BaseAddress = new Uri("https://edge.ippanel.com"))
             .AddSmsRetryPolicy();
 
+        services.AddKeyedScoped<ISmsProvider, AfeProvider>("afe");
+        // SOAP 1.1 endpoint confirmed from the user's own working WCF client config (see
+        // AfeProvider's doc comment) — not guessed.
+        services.AddHttpClient(SmsHttpClientNames.Afe, c => c.BaseAddress = new Uri("https://www.afe.ir"))
+            .AddSmsRetryPolicy();
+
         services.AddScoped<SmsStreamMessageProcessor>();
         services.AddScoped<StreamClaimService>();
         services.AddScoped<LinkSmsOutboxResolver>();
