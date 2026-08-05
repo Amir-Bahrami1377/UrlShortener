@@ -1,0 +1,32 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: urlshortener-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Dev_Passw0rd!"
+    ports: [ "1433:1433" ]
+    volumes: [ "urlshortener-sqldata:/var/opt/mssql" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: urlshortener-redis
+    command: redis-server --appendonly yes --appendfsync everysec
+    # Host port remapped to 6380 (container stays 6379) to avoid colliding with
+    # the unrelated PrescriptionApi project's redis:7-alpine on this same machine.
+    ports: [ "6380:6379" ]
+    volumes: [ "urlshortener-redisdata:/data" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  urlshortener-sqldata:
+  urlshortener-redisdata:

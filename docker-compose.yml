@@ -1,0 +1,102 @@
+# §M8.6 — production-shaped compose (distinct from docker-compose.dev.yml, which is Windows-host
+# dev-loop only). Builds the 4 host images from their own Dockerfiles and wires them to SQL
+# Server/Redis over the internal Docker network (no localhost DNS involved — container-to-container
+# resolution goes through Docker's embedded DNS, unrelated to the Windows-host "localhost" resolution
+# slowness worked around in the M8.4d load test harness).
+#
+# Passwords/secrets below have local-only defaults so `docker compose up` works out of the box for
+# verification; every one of them MUST be overridden via a real secret store before this goes near a
+# real deployment (see the SQL_SA_PASSWORD / OTP_HMAC_SECRET / DATA_PROTECTION_* comments).
+#
+# Explicit project name: without this, Compose defaults the project name to the directory name —
+# the same default docker-compose.dev.yml resolves to. Running this file previously replaced (not
+# merely stopped) the dev sqlserver/redis containers because both files ended up wanting the same
+# `urlshortener-sqlserver`/`urlshortener-redis` container identities. The named volumes happened to
+# use different names in each file, so no data was actually lost, but the containers themselves got
+# recreated — this `name:` makes the two stacks fully independent so that can't happen again.
+name: urlshortener-prod
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD:-Change_Me_Before_Prod1}"
+    volumes: [ "sqldata:/var/opt/mssql" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --appendfsync everysec
+    volumes: [ "redisdata:/data" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: { context: ., dockerfile: src/Shortener.Api/Dockerfile }
+    ports: [ "8081:8080" ]
+    environment:
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${SQL_SA_PASSWORD:-Change_Me_Before_Prod1};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+    volumes: [ "filestorage:/data/filestorage", "apilogs:/data/logs" ]
+    depends_on:
+      sqlserver: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  admin:
+    build: { context: ., dockerfile: src/Shortener.Admin/Dockerfile }
+    ports: [ "8082:8080" ]
+    environment:
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${SQL_SA_PASSWORD:-Change_Me_Before_Prod1};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+    volumes: [ "filestorage:/data/filestorage", "adminlogs:/data/logs" ]
+    depends_on:
+      sqlserver: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  publicweb:
+    build: { context: ., dockerfile: src/Shortener.PublicWeb/Dockerfile }
+    ports: [ "8083:8080" ]
+    environment:
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${SQL_SA_PASSWORD:-Change_Me_Before_Prod1};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+    volumes: [ "filestorage:/data/filestorage", "publicweblogs:/data/logs" ]
+    depends_on:
+      sqlserver: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    build: { context: ., dockerfile: src/Shortener.Worker/Dockerfile }
+    ports: [ "8084:8080" ]
+    environment:
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${SQL_SA_PASSWORD:-Change_Me_Before_Prod1};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+      # §M4.3 — the Development-only default in OtpService.cs must never be reachable in Production;
+      # this is the one host that actually renders/sends the OTP body, so it's set here as the
+      # canonical example even though every host reads the same variable if it's present.
+      OTP_HMAC_SECRET: "${OTP_HMAC_SECRET:?Set OTP_HMAC_SECRET before starting in anything but local verification}"
+    volumes: [ "filestorage:/data/filestorage", "workerlogs:/data/logs" ]
+    depends_on:
+      sqlserver: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+volumes:
+  sqldata:
+  redisdata:
+  filestorage:
+  apilogs:
+  adminlogs:
+  publicweblogs:
+  workerlogs:
