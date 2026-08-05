@@ -6,6 +6,7 @@
     <h3>کلاینت‌ها</h3>
     <a class="btn btn-primary" asp-action="Create">ایجاد کلاینت جدید</a>
 </div>
+<div class="table-responsive">
 <table class="table table-striped align-middle">
     <thead>
         <tr>
@@ -46,13 +47,15 @@
                         <span class="badge bg-success">کامل</span>
                     }
                 </td>
-                <td>
+                <td class="text-nowrap">
                     <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@client.Id">ویرایش</a>
                     <a class="btn btn-sm btn-outline-secondary" asp-controller="ApiKeys" asp-action="Index" asp-route-clientId="@client.Id">کلیدهای API</a>
                     <a class="btn btn-sm btn-outline-secondary" asp-controller="SmsAccounts" asp-action="Index" asp-route-clientId="@client.Id">حساب‌های پیامکی</a>
+                    <a class="btn btn-sm btn-outline-secondary" asp-controller="PrintDefinitions" asp-action="Index" asp-route-clientId="@client.Id">نام‌های چاپ</a>
                     <a class="btn btn-sm btn-outline-secondary" asp-controller="MessageTemplates" asp-action="Index" asp-route-clientId="@client.Id">قالب‌ها</a>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+</div>

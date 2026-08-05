@@ -31,8 +31,10 @@ public sealed class MessageTemplateFormViewModel
     [Display(Name = "نوع قالب")]
     public string TemplateType { get; set; } = "DownloadLink";
 
-    [Display(Name = "کد چاپ (ReportId) — فقط برای قالب لینک")]
+    [Display(Name = "اسم چاپ — فقط برای قالب لینک")]
     public int? ReportId { get; set; }
+
+    public List<(int Code, string Name)> PrintDefinitions { get; set; } = [];
 
     [Required(ErrorMessage = "متن قالب الزامی است.")]
     [Display(Name = "متن قالب")]

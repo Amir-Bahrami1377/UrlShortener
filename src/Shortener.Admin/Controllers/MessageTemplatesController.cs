@@ -43,7 +43,9 @@ public class MessageTemplatesController(AppDbContext db) : Controller
             return NotFound();
         }
 
-        return View("Form", new MessageTemplateFormViewModel { ClientId = clientId });
+        var model = new MessageTemplateFormViewModel { ClientId = clientId };
+        model.PrintDefinitions = await GetPrintDefinitionsAsync(clientId, model.ReportId, ct);
+        return View("Form", model);
     }
 
     [HttpPost]
@@ -53,6 +55,7 @@ public class MessageTemplatesController(AppDbContext db) : Controller
         ValidatePlaceholders(model);
         if (!ModelState.IsValid)
         {
+            model.PrintDefinitions = await GetPrintDefinitionsAsync(model.ClientId, model.ReportId, ct);
             return View("Form", model);
         }
 
@@ -82,7 +85,7 @@ public class MessageTemplatesController(AppDbContext db) : Controller
             return NotFound();
         }
 
-        return View("Form", new MessageTemplateFormViewModel
+        var model = new MessageTemplateFormViewModel
         {
             Id = template.Id,
             ClientId = template.ClientId,
@@ -92,7 +95,9 @@ public class MessageTemplatesController(AppDbContext db) : Controller
             Body = template.Body,
             PatternCode = template.PatternCode,
             IsActive = template.IsActive,
-        });
+        };
+        model.PrintDefinitions = await GetPrintDefinitionsAsync(model.ClientId, model.ReportId, ct);
+        return View("Form", model);
     }
 
     [HttpPost]
@@ -102,6 +107,7 @@ public class MessageTemplatesController(AppDbContext db) : Controller
         ValidatePlaceholders(model);
         if (!ModelState.IsValid)
         {
+            model.PrintDefinitions = await GetPrintDefinitionsAsync(model.ClientId, model.ReportId, ct);
             return View("Form", model);
         }
 
@@ -136,5 +142,24 @@ public class MessageTemplatesController(AppDbContext db) : Controller
         {
             ModelState.AddModelError(nameof(model.Body), "قالب لینک حتماً باید شامل {shortUrl} یا {code} باشد.");
         }
+    }
+
+    /// <summary>If the template's current ReportId no longer matches any defined print name (e.g. it
+    /// was set before PrintDefinitions existed), it's kept as a labeled placeholder option so editing
+    /// the template doesn't silently drop it.</summary>
+    private async Task<List<(int Code, string Name)>> GetPrintDefinitionsAsync(int clientId, int? currentReportId, CancellationToken ct)
+    {
+        List<(int Code, string Name)> definitions = await db.PrintDefinitions
+            .Where(p => p.ClientId == clientId)
+            .OrderBy(p => p.Code)
+            .Select(p => new ValueTuple<int, string>(p.Code, p.Name))
+            .ToListAsync(ct);
+
+        if (currentReportId is { } reportId && !definitions.Any(d => d.Code == reportId))
+        {
+            definitions.Insert(0, (reportId, $"کد {reportId} (بدون نام تعریف‌شده)"));
+        }
+
+        return definitions;
     }
 }

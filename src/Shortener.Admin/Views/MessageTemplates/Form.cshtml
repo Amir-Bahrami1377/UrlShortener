@@ -26,7 +26,21 @@
                 </div>
                 <div class="col-md-6 mb-3" id="report-id-field">
                     <label asp-for="ReportId" class="form-label"></label>
-                    <input asp-for="ReportId" class="form-control" />
+                    <select asp-for="ReportId" class="form-select">
+                        <option value="">— انتخاب کنید —</option>
+                        @foreach (var pd in Model.PrintDefinitions)
+                        {
+                            <option value="@pd.Code">@pd.Name (@pd.Code)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="ReportId" class="text-danger"></span>
+                    @if (Model.PrintDefinitions.Count == 0)
+                    {
+                        <div class="form-text">
+                            هنوز اسم چاپی برای این کلاینت تعریف نشده.
+                            <a asp-controller="PrintDefinitions" asp-action="Create" asp-route-clientId="@Model.ClientId" target="_blank" rel="noopener">همین‌جا اضافه کنید</a>.
+                        </div>
+                    }
                 </div>
             </div>
 

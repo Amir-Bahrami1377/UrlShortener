@@ -1,0 +1,42 @@
+@model Shortener.Admin.Models.PrintDefinitionListViewModel
+@{
+    ViewData["Title"] = "نام‌های چاپ";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>نام‌های چاپ — @Model.ClientName</h3>
+    <a class="btn btn-primary" asp-action="Create" asp-route-clientId="@Model.ClientId">ایجاد نام چاپ جدید</a>
+</div>
+<a asp-controller="Clients" asp-action="Index" class="d-inline-block mb-3">&rarr; بازگشت به کلاینت‌ها</a>
+
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>کد چاپ</th>
+            <th>اسم چاپ</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td class="mono">@item.Code</td>
+                <td>@item.Name</td>
+                <td class="text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Id">ویرایش</a>
+                    <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('این نام چاپ حذف شود؟');">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="clientId" value="@Model.ClientId" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="3" class="text-muted">هنوز نام چاپی تعریف نشده است.</td></tr>
+        }
+    </tbody>
+</table>
+</div>

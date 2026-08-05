@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<SmsProvider> SmsProviders => Set<SmsProvider>();
     public DbSet<SmsAccount> SmsAccounts => Set<SmsAccount>();
     public DbSet<MessageTemplate> MessageTemplates => Set<MessageTemplate>();
+    public DbSet<PrintDefinition> PrintDefinitions => Set<PrintDefinition>();
     public DbSet<RetentionPolicy> RetentionPolicies => Set<RetentionPolicy>();
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
     public DbSet<ShortLink> ShortLinks => Set<ShortLink>();
