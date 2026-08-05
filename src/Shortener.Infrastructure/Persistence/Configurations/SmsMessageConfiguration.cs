@@ -11,6 +11,8 @@ public class SmsMessageConfiguration : IEntityTypeConfiguration<SmsMessage>
         b.HasKey(x => x.Id);
         b.Property(x => x.PhoneNumber).HasMaxLength(15).IsRequired();
         b.Property(x => x.Body).HasMaxLength(1000).IsRequired();
+        b.Property(x => x.PatternCode).HasMaxLength(100);
+        b.Property(x => x.PatternTokensJson).HasColumnType("nvarchar(max)");
         b.Property(x => x.ProviderMessageId).HasMaxLength(100);
         b.Property(x => x.LastError).HasMaxLength(1000);
         b.Property(x => x.Cost).HasPrecision(18, 2);

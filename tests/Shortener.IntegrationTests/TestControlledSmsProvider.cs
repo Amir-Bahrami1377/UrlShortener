@@ -17,15 +17,22 @@ public sealed class TestControlledSmsProvider : ISmsProvider
 
     public string ProviderCode => Code;
 
+    /// <summary>The request from the most recent SendAsync call — safe to inspect since this provider
+    /// is registered Scoped and each test resolves its own scope.</summary>
+    public SmsSendRequest? LastRequest { get; private set; }
+
     public IReadOnlyList<ProviderField> GetRequiredFields() => [];
 
-    public Task<SmsSendResult> SendAsync(SmsAccountConfig config, SmsSendRequest request, CancellationToken ct) =>
-        Task.FromResult(config.SettingsJson switch
+    public Task<SmsSendResult> SendAsync(SmsAccountConfig config, SmsSendRequest request, CancellationToken ct)
+    {
+        LastRequest = request;
+        return Task.FromResult(config.SettingsJson switch
         {
             Retryable => new SmsSendResult(false, null, "TEST_RETRYABLE", "simulated retryable failure", IsRetryable: true, Cost: null),
             Permanent => new SmsSendResult(false, null, "TEST_PERMANENT", "simulated permanent failure", IsRetryable: false, Cost: null),
             _ => new SmsSendResult(true, $"test-{Guid.NewGuid():N}", "OK", null, IsRetryable: false, Cost: 0m),
         });
+    }
 
     public Task<IReadOnlyList<SmsDeliveryStatus>> GetStatusAsync(
         SmsAccountConfig config, IReadOnlyList<string> providerMessageIds, CancellationToken ct)

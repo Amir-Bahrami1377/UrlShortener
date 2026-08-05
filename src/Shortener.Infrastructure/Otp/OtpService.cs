@@ -95,11 +95,12 @@ public sealed class OtpService(
         await redisDb.StringSetAsync(cooldownKey, 1, TimeSpan.FromSeconds(_otp.ResendCooldownSeconds));
         await redisDb.KeyDeleteAsync($"otp:fail:{code}");
 
-        var body = TemplateRenderer.Render(template.Body, new Dictionary<string, string>
+        var tokens = new Dictionary<string, string>
         {
             ["otp"] = otp,
             ["otpMinutes"] = (_otp.TtlSeconds / 60).ToString(),
-        });
+        };
+        var body = TemplateRenderer.Render(template.Body, tokens);
 
         var smsMessage = new SmsMessage
         {
@@ -109,6 +110,8 @@ public sealed class OtpService(
             MessageType = SmsMessageType.Otp,
             PhoneNumber = link.PhoneNumber,
             Body = body,
+            PatternCode = template.PatternCode,
+            PatternTokensJson = JsonSerializer.Serialize(tokens),
             Status = SmsStatus.Queued,
         };
         db.SmsMessages.Add(smsMessage);

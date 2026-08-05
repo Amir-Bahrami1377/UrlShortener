@@ -86,7 +86,7 @@ public sealed class LinkSmsOutboxResolver(
             return (LinkSmsResolveOutcome.Failed, "ERR_BULK_SMS_NOT_CONFIGURED");
         }
 
-        var body = TemplateRenderer.Render(template.Body, new Dictionary<string, string>
+        var tokens = new Dictionary<string, string>
         {
             ["shortUrl"] = $"{_shortLink.BaseUrl.TrimEnd('/')}/s/{link.Code}",
             ["code"] = link.Code,
@@ -95,7 +95,8 @@ public sealed class LinkSmsOutboxResolver(
             ["shod"] = link.Shod,
             ["radif"] = link.Radif,
             ["expireDate"] = PersianDateHelper.ToPersianDate(link.ExpiresAt),
-        });
+        };
+        var body = TemplateRenderer.Render(template.Body, tokens);
 
         var smsMessage = new SmsMessage
         {
@@ -105,6 +106,8 @@ public sealed class LinkSmsOutboxResolver(
             MessageType = SmsMessageType.DownloadLink,
             PhoneNumber = link.PhoneNumber,
             Body = body,
+            PatternCode = template.PatternCode,
+            PatternTokensJson = JsonSerializer.Serialize(tokens),
             Status = SmsStatus.Queued,
         };
         db.SmsMessages.Add(smsMessage);

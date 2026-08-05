@@ -22,6 +22,15 @@ public class SmsMessage : IHasCreatedAt
     /// <summary>Fully rendered text (placeholders already substituted).</summary>
     public required string Body { get; set; }
 
+    /// <summary>Snapshot of the template's PatternCode at send-time, same as Body — not a live read of
+    /// Template.PatternCode, so an edit to the template can't retroactively change an already-queued
+    /// message. Null means send Body as free text.</summary>
+    public string? PatternCode { get; set; }
+
+    /// <summary>The raw placeholder values (same dictionary used to render Body), serialized so
+    /// pattern-based providers can pass them positionally instead of a rendered string.</summary>
+    public string? PatternTokensJson { get; set; }
+
     public SmsStatus Status { get; set; }
     public string? ProviderMessageId { get; set; }
     public int TryCount { get; set; }

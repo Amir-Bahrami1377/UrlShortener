@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Shortener.Application.Abstractions;
 using Shortener.Domain.Entities;
 using Shortener.Domain.Enums;
 using Shortener.Infrastructure.Persistence;
@@ -33,6 +34,30 @@ public sealed class SmsStreamMessageProcessorTests(ApiTestFixture fixture)
 
         var history = await db.SmsStatusHistories.Where(h => h.SmsMessageId == message.Id).ToListAsync();
         history.Should().ContainSingle(h => h.Status == SmsStatus.Sent);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_MessageWithPatternCode_PassesPatternCodeAndTokensToProvider()
+    {
+        using var scope = fixture.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var processor = scope.ServiceProvider.GetRequiredService<SmsStreamMessageProcessor>();
+
+        var message = await SeedQueuedMessageAsync(db, settingsJsonMode: null);
+        message.PatternCode = "12345";
+        message.PatternTokensJson = """{"otp":"654321","otpMinutes":"2"}""";
+        await db.SaveChangesAsync();
+
+        var outcome = await processor.ProcessAsync(message.Id, CancellationToken.None);
+
+        outcome.Should().Be(SmsProcessOutcome.Sent);
+
+        var provider = (TestControlledSmsProvider)scope.ServiceProvider
+            .GetRequiredKeyedService<ISmsProvider>(TestControlledSmsProvider.Code);
+        provider.LastRequest.Should().NotBeNull();
+        provider.LastRequest!.PatternCode.Should().Be("12345");
+        provider.LastRequest.PatternTokens.Should().ContainKey("otp").WhoseValue.Should().Be("654321");
+        provider.LastRequest.PatternTokens.Should().ContainKey("otpMinutes").WhoseValue.Should().Be("2");
     }
 
     [Fact]

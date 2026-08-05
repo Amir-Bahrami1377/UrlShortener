@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -58,7 +59,10 @@ public sealed class SmsStreamMessageProcessor(
             SenderNumber: account.SenderNumber,
             BaseUrl: account.BaseUrl,
             SettingsJson: account.SettingsJson);
-        var request = new SmsSendRequest(message.PhoneNumber, message.Body, PatternCode: null, PatternTokens: null, message.MessageType);
+        var patternTokens = string.IsNullOrEmpty(message.PatternTokensJson)
+            ? null
+            : JsonSerializer.Deserialize<Dictionary<string, string>>(message.PatternTokensJson);
+        var request = new SmsSendRequest(message.PhoneNumber, message.Body, message.PatternCode, patternTokens, message.MessageType);
 
         SmsSendResult result;
         try
