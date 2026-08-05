@@ -1,0 +1,26 @@
+@model Shortener.Admin.Models.ClientCreateViewModel
+@{
+    ViewData["Title"] = "ایجاد کلاینت";
+}
+<h3>ایجاد کلاینت جدید</h3>
+<div class="col-md-6">
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Code" class="form-label"></label>
+            <input asp-for="Code" class="form-control" />
+            <div class="form-text">این کد پس از ایجاد قابل تغییر نیست.</div>
+            <span asp-validation-for="Code" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">ایجاد</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">انصراف</a>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

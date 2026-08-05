@@ -1,0 +1,70 @@
+@using Shortener.Application.Services
+@model Shortener.Admin.Models.StorageReportViewModel
+@{
+    ViewData["Title"] = "گزارش فضا و نگهداشت";
+}
+<h3 class="mb-3">گزارش فضا و نگهداشت</h3>
+
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+    @foreach (var status in Model.CountByStatus)
+    {
+        <div class="col">
+            <div class="card"><div class="card-body">
+                <div class="text-muted small">@status.Key</div>
+                <div class="fs-4">@status.Value</div>
+            </div></div>
+        </div>
+    }
+    <div class="col">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">پیش‌بینی حذف ۳۰ روز آینده</div>
+            <div class="fs-5">@Model.ForecastFileCount30Days فایل — @((Model.ForecastBytes30Days / 1024.0 / 1024.0).ToString("N1")) MB</div>
+        </div></div>
+    </div>
+</div>
+
+<h5>مصرف فضا بر اساس کلاینت و ماه (شمسی)</h5>
+<table class="table table-sm table-striped w-auto mb-4">
+    <thead><tr><th>کلاینت</th><th>ماه</th><th>تعداد فایل</th><th>حجم</th></tr></thead>
+    <tbody>
+        @foreach (var usage in Model.UsageByClientAndMonth)
+        {
+            <tr>
+                <td>@usage.ClientName</td>
+                <td>@usage.PersianMonth</td>
+                <td>@usage.FileCount</td>
+                <td>@((usage.TotalBytes / 1024.0 / 1024.0).ToString("N1")) MB</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h5>تاریخچه حذف اخیر</h5>
+<table class="table table-sm table-striped">
+    <thead><tr><th>تاریخ</th><th>مسیر فایل</th><th>حجم</th><th>دلیل</th><th>نتیجه</th></tr></thead>
+    <tbody>
+        @foreach (var del in Model.RecentDeletions)
+        {
+            <tr>
+                <td>@del.AtUtc.ToPersianDateTime()</td>
+                <td><code class="small">@del.StorageKey</code></td>
+                <td>@((del.SizeBytes / 1024.0).ToString("N0")) KB</td>
+                <td>@del.Reason</td>
+                <td>
+                    @if (del.Ok)
+                    {
+                        <span class="badge bg-success">موفق</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">ناموفق</span>
+                    }
+                </td>
+            </tr>
+        }
+        @if (Model.RecentDeletions.Count == 0)
+        {
+            <tr><td colspan="5" class="text-muted">هنوز حذفی ثبت نشده است.</td></tr>
+        }
+    </tbody>
+</table>

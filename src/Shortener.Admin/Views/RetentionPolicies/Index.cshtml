@@ -1,0 +1,61 @@
+@model List<Shortener.Admin.Models.RetentionPolicyListItemViewModel>
+@{
+    ViewData["Title"] = "سیاست‌های نگهداشت";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>سیاست‌های نگهداشت</h3>
+    <a class="btn btn-primary" asp-action="Create">ایجاد سیاست جدید</a>
+</div>
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>عنوان</th>
+            <th>محدوده</th>
+            <th>روز نگهداشت</th>
+            <th>روز مهلت</th>
+            <th>اولویت</th>
+            <th>وضعیت</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var policy in Model)
+        {
+            <tr>
+                <td>@policy.Title</td>
+                <td>
+                    @if (policy.IsGlobal)
+                    {
+                        <span class="badge bg-info text-dark">سراسری</span>
+                    }
+                    else
+                    {
+                        @policy.ClientName
+                        @if (policy.ReportId is not null)
+                        {
+                            <span class="text-muted"> / ReportId=@policy.ReportId</span>
+                        }
+                        @if (policy.BatchTag is not null)
+                        {
+                            <span class="text-muted"> / @policy.BatchTag</span>
+                        }
+                    }
+                </td>
+                <td>@policy.RetentionDays</td>
+                <td>@policy.GraceDays</td>
+                <td>@policy.Priority</td>
+                <td>
+                    @if (policy.IsActive)
+                    {
+                        <span class="badge bg-success">فعال</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">غیرفعال</span>
+                    }
+                </td>
+                <td><a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@policy.Id">ویرایش</a></td>
+            </tr>
+        }
+    </tbody>
+</table>

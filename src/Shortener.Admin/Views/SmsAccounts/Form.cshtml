@@ -1,0 +1,107 @@
+@using System.Text.Json
+@using Shortener.Application.Services
+@model Shortener.Admin.Models.SmsAccountFormViewModel
+@{
+    ViewData["Title"] = Model.Id is null ? "ایجاد حساب پیامکی" : "ویرایش حساب پیامکی";
+    var fieldsByProviderCode = Model.Providers.ToDictionary(
+        p => p.Code,
+        p => SmsProviderFieldCatalog.GetFields(p.Code).Select(f => f.Key).ToArray());
+}
+<h3>@ViewData["Title"]</h3>
+<div class="col-md-7">
+    <form asp-action="@(Model.Id is null ? "Create" : "Edit")" method="post">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ClientId" />
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+        <div class="mb-3">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="SmsProviderId" class="form-label"></label>
+                <select asp-for="SmsProviderId" id="provider-select" class="form-select">
+                    @foreach (var provider in Model.Providers)
+                    {
+                        <option value="@provider.Id" data-code="@provider.Code">@provider.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Purpose" class="form-label"></label>
+                <select asp-for="Purpose" class="form-select">
+                    <option value="Bulk">انبوه (Bulk)</option>
+                    <option value="Otp">یک‌بارمصرف (OTP)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row" id="field-apikey">
+            <div class="col-md-12 mb-3">
+                <label asp-for="ApiKey" class="form-label"></label>
+                <input asp-for="ApiKey" class="form-control" autocomplete="off" placeholder="@(Model.Id is null ? "" : "خالی بگذارید تا بدون تغییر بماند")" />
+            </div>
+        </div>
+        <div class="row" id="field-userpass">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Username" class="form-label"></label>
+                <input asp-for="Username" class="form-control" autocomplete="off" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" type="password" class="form-control" autocomplete="off" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="SenderNumber" class="form-label"></label>
+                <input asp-for="SenderNumber" class="form-control" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="BaseUrl" class="form-label"></label>
+                <input asp-for="BaseUrl" class="form-control" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="RatePerMinute" class="form-label"></label>
+            <input asp-for="RatePerMinute" class="form-control" style="max-width: 200px" />
+        </div>
+
+        <div class="form-check mb-2">
+            <input asp-for="IsDefault" class="form-check-input" />
+            <label asp-for="IsDefault" class="form-check-label"></label>
+            <div class="form-text">اگر فعال باشد، حساب پیش‌فرض قبلی برای همین هدف غیرفعال خواهد شد.</div>
+        </div>
+        <div class="form-check mb-3">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label"></label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">ذخیره</button>
+        <a asp-action="Index" asp-route-clientId="@Model.ClientId" class="btn btn-outline-secondary">انصراف</a>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Progressive enhancement only — every field stays visible (and submittable) without JS.
+        const fieldsByProviderCode = @Html.Raw(JsonSerializer.Serialize(fieldsByProviderCode));
+
+        function applyProviderFields() {
+            const select = document.getElementById('provider-select');
+            const code = select.options[select.selectedIndex]?.dataset.code;
+            const fields = fieldsByProviderCode[code] || [];
+            document.getElementById('field-apikey').style.display = fields.includes('ApiKey') ? '' : 'none';
+            document.getElementById('field-userpass').style.display = fields.includes('Username') ? '' : 'none';
+        }
+
+        document.getElementById('provider-select').addEventListener('change', applyProviderFields);
+        applyProviderFields();
+    </script>
+}

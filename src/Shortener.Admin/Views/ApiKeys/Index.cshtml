@@ -1,0 +1,56 @@
+@model Shortener.Admin.Models.ApiKeyListViewModel
+@{
+    ViewData["Title"] = "کلیدهای API";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>کلیدهای API — @Model.ClientName</h3>
+    <a class="btn btn-primary" asp-action="Create" asp-route-clientId="@Model.ClientId">ایجاد کلید جدید</a>
+</div>
+<a asp-controller="Clients" asp-action="Index" class="d-inline-block mb-3">&rarr; بازگشت به کلاینت‌ها</a>
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>عنوان</th>
+            <th>پیشوند کلید</th>
+            <th>وضعیت</th>
+            <th>آخرین استفاده</th>
+            <th>تاریخ انقضا</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var key in Model.Keys)
+        {
+            <tr>
+                <td>@key.Title</td>
+                <td><code>@key.KeyPrefix…</code></td>
+                <td>
+                    @if (!key.IsActive)
+                    {
+                        <span class="badge bg-danger">باطل‌شده</span>
+                    }
+                    else if (key.ExpiresAt is { } exp && exp < DateTime.UtcNow)
+                    {
+                        <span class="badge bg-warning text-dark">منقضی</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">فعال</span>
+                    }
+                </td>
+                <td>@(key.LastUsedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                <td>@(key.ExpiresAt?.ToString("yyyy-MM-dd") ?? "—")</td>
+                <td>
+                    @if (key.IsActive)
+                    {
+                        <form asp-action="Revoke" method="post" class="d-inline" onsubmit="return confirm('این کلید ابطال شود؟');">
+                            <input type="hidden" name="id" value="@key.Id" />
+                            <input type="hidden" name="clientId" value="@Model.ClientId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">ابطال</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

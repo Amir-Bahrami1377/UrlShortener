@@ -1,0 +1,116 @@
+@model Shortener.Admin.Models.MessageTemplateFormViewModel
+@{
+    ViewData["Title"] = Model.Id is null ? "ایجاد قالب پیامک" : "ویرایش قالب پیامک";
+}
+<h3>@ViewData["Title"]</h3>
+<div class="row">
+    <div class="col-md-7">
+        <form asp-action="@(Model.Id is null ? "Create" : "Edit")" method="post">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ClientId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TemplateType" class="form-label"></label>
+                    <select asp-for="TemplateType" id="template-type" class="form-select">
+                        <option value="DownloadLink">لینک دانلود</option>
+                        <option value="Otp">کد یک‌بارمصرف (OTP)</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3" id="report-id-field">
+                    <label asp-for="ReportId" class="form-label"></label>
+                    <input asp-for="ReportId" class="form-control" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Body" class="form-label"></label>
+                <textarea asp-for="Body" id="body-text" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Body" class="text-danger"></span>
+                <div class="form-text">
+                    Placeholder های مجاز: <code>{shortUrl}</code> <code>{code}</code> <code>{reportName}</code>
+                    <code>{shop}</code> <code>{shod}</code> <code>{radif}</code> <code>{expireDate}</code>
+                    <code>{otp}</code> <code>{otpMinutes}</code>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PatternCode" class="form-label"></label>
+                <input asp-for="PatternCode" class="form-control" />
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">ذخیره</button>
+            <a asp-action="Index" asp-route-clientId="@Model.ClientId" class="btn btn-outline-secondary">انصراف</a>
+        </form>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">پیش‌نمایش زنده</h5>
+                <p class="border rounded p-2 bg-light" id="preview-text" style="white-space: pre-wrap; direction: rtl;"></p>
+                <div class="text-muted small">
+                    تعداد کاراکتر: <span id="char-count">0</span> —
+                    تعداد پارت پیامک: <span id="part-count">1</span>
+                </div>
+                <div class="alert alert-warning mt-2 d-none" id="length-warning">
+                    متن فارسی از ۷۰ کاراکتر (یک پارت UCS-2) بیشتر شد.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const sampleValues = {
+            shortUrl: 'https://links.example.ir/s/Ab3xY9',
+            code: 'Ab3xY9',
+            reportName: 'سند مالکیت',
+            shop: '12345',
+            shod: '678',
+            radif: '9',
+            expireDate: '1405/08/10',
+            otp: '123456',
+            otpMinutes: '2',
+        };
+
+        function renderPreview() {
+            const raw = document.getElementById('body-text').value;
+            let preview = raw;
+            for (const [key, value] of Object.entries(sampleValues)) {
+                preview = preview.split('{' + key + '}').join(value);
+            }
+            document.getElementById('preview-text').textContent = preview || '(خالی)';
+
+            const length = preview.length;
+            document.getElementById('char-count').textContent = length;
+            const partCount = length === 0 ? 0 : (length <= 70 ? 1 : Math.ceil(length / 67));
+            document.getElementById('part-count').textContent = partCount;
+            document.getElementById('length-warning').classList.toggle('d-none', length <= 70);
+        }
+
+        function toggleReportIdField() {
+            const isOtp = document.getElementById('template-type').value === 'Otp';
+            document.getElementById('report-id-field').style.display = isOtp ? 'none' : '';
+        }
+
+        document.getElementById('body-text').addEventListener('input', renderPreview);
+        document.getElementById('template-type').addEventListener('change', toggleReportIdField);
+        renderPreview();
+        toggleReportIdField();
+    </script>
+}

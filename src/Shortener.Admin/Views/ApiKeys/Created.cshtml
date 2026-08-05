@@ -1,0 +1,17 @@
+@model Shortener.Admin.Models.ApiKeyCreatedViewModel
+@{
+    ViewData["Title"] = "کلید ایجاد شد";
+}
+<h3>کلید API ایجاد شد</h3>
+<div class="alert alert-warning">
+    <strong>این مقدار دیگر قابل بازیابی نیست.</strong> همین حالا آن را در جایی امن ذخیره کنید — پس از ترک این صفحه دیگر نمایش داده نخواهد شد.
+</div>
+<div class="col-md-8">
+    <dl class="row">
+        <dt class="col-sm-3">عنوان</dt>
+        <dd class="col-sm-9">@Model.Title</dd>
+        <dt class="col-sm-3">کلید</dt>
+        <dd class="col-sm-9"><code class="fs-6 user-select-all">@Model.RawKey</code></dd>
+    </dl>
+    <a asp-action="Index" asp-route-clientId="@Model.ClientId" class="btn btn-primary">متوجه شدم، بازگشت به لیست کلیدها</a>
+</div>

@@ -1,0 +1,41 @@
+@model Shortener.Admin.Models.MessageTemplateListViewModel
+@{
+    ViewData["Title"] = "قالب‌های پیامک";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>قالب‌های پیامک — @Model.ClientName</h3>
+    <a class="btn btn-primary" asp-action="Create" asp-route-clientId="@Model.ClientId">ایجاد قالب جدید</a>
+</div>
+<a asp-controller="Clients" asp-action="Index" class="d-inline-block mb-3">&rarr; بازگشت به کلاینت‌ها</a>
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>عنوان</th>
+            <th>نوع</th>
+            <th>کد چاپ</th>
+            <th>وضعیت</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var template in Model.Templates)
+        {
+            <tr>
+                <td>@template.Title</td>
+                <td>@(template.TemplateType == "Otp" ? "OTP" : "لینک دانلود")</td>
+                <td>@(template.ReportId?.ToString() ?? "سراسری")</td>
+                <td>
+                    @if (template.IsActive)
+                    {
+                        <span class="badge bg-success">فعال</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">غیرفعال</span>
+                    }
+                </td>
+                <td><a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@template.Id">ویرایش</a></td>
+            </tr>
+        }
+    </tbody>
+</table>

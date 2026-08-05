@@ -1,0 +1,49 @@
+@using Shortener.Application.Services
+@model Shortener.Admin.Models.LinkDetailViewModel
+@{
+    ViewData["Title"] = "جزئیات لینک";
+}
+<a asp-action="Links" class="d-inline-block mb-3">&rarr; بازگشت به گزارش لینک‌ها</a>
+<h3>جزئیات لینک <code>@Model.Summary.Code</code></h3>
+
+<dl class="row">
+    <dt class="col-sm-2">RequestId</dt><dd class="col-sm-10"><code>@Model.Summary.RequestId</code></dd>
+    <dt class="col-sm-2">کلاینت</dt><dd class="col-sm-10">@Model.Summary.ClientName</dd>
+    <dt class="col-sm-2">پرونده</dt><dd class="col-sm-10">@Model.Summary.Shop / @Model.Summary.Shod / @Model.Summary.Radif</dd>
+    <dt class="col-sm-2">نام گزارش</dt><dd class="col-sm-10">@Model.Summary.ReportName</dd>
+    <dt class="col-sm-2">شماره</dt><dd class="col-sm-10">@Model.Summary.MaskedPhone</dd>
+    <dt class="col-sm-2">تاریخ ایجاد</dt><dd class="col-sm-10">@Model.Summary.CreatedAt.ToPersianDateTime()</dd>
+    <dt class="col-sm-2">انقضا</dt><dd class="col-sm-10">@Model.Summary.ExpiresAt.ToPersianDate()</dd>
+    <dt class="col-sm-2">تعداد OTP / دانلود</dt><dd class="col-sm-10">@Model.Summary.OtpRequestCount / @Model.Summary.DownloadCount</dd>
+    <dt class="col-sm-2">وضعیت پیامک</dt><dd class="col-sm-10">@Model.Summary.SmsStatus</dd>
+    <dt class="col-sm-2">وضعیت فایل</dt><dd class="col-sm-10">@Model.Summary.FileStatus</dd>
+</dl>
+
+<h5 class="mt-4">تایم‌لاین رخدادها</h5>
+<table class="table table-sm table-striped">
+    <thead><tr><th>زمان</th><th>نوع</th><th>توضیح</th><th>نتیجه</th></tr></thead>
+    <tbody>
+        @foreach (var entry in Model.Timeline)
+        {
+            <tr>
+                <td>@entry.AtUtc.ToPersianDateTime()</td>
+                <td>@entry.Kind</td>
+                <td>@entry.Description</td>
+                <td>
+                    @if (entry.IsSuccess)
+                    {
+                        <span class="badge bg-success">موفق</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">ناموفق</span>
+                    }
+                </td>
+            </tr>
+        }
+        @if (Model.Timeline.Count == 0)
+        {
+            <tr><td colspan="4" class="text-muted">رخدادی ثبت نشده است.</td></tr>
+        }
+    </tbody>
+</table>

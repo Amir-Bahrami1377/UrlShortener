@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - پنل مدیریت کوتاه‌کننده لینک</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.rtl.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { font-family: Tahoma, "Segoe UI", sans-serif; }
+        .navbar-brand { font-weight: bold; }
+        .sidebar { min-height: calc(100vh - 56px); background: #f8f9fa; border-left: 1px solid #dee2e6; }
+        .sidebar .nav-link { color: #333; }
+        .sidebar .nav-link.active { font-weight: bold; color: #0d6efd; }
+        main { padding: 24px; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">پنل مدیریت کوتاه‌کننده لینک</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="d-flex">
+                        <span class="navbar-text text-white ms-3">@User.Identity!.Name</span>
+                        <button type="submit" class="btn btn-outline-light btn-sm">خروج</button>
+                    </form>
+                }
+            </div>
+        </nav>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <nav class="col-md-2 sidebar py-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Dashboard">داشبورد</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Links">گزارش لینک‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Sms">گزارش پیامک‌ها</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Storage">گزارش فضا و نگهداشت</a></li>
+                        @if (User.IsInRole("SuperAdmin") || User.IsInRole("Operator"))
+                        {
+                            <li><hr /></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Clients" asp-action="Index">کلاینت‌ها</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="SmsAccounts" asp-action="Index">حساب‌های پیامکی</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="MessageTemplates" asp-action="Index">قالب‌های پیامک</a></li>
+                        }
+                        @if (User.IsInRole("SuperAdmin"))
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-controller="RetentionPolicies" asp-action="Index">سیاست‌های نگهداشت</a></li>
+                        }
+                    </ul>
+                </nav>
+                <main class="col-md-10">
+                    @if (TempData["StatusMessage"] is string status)
+                    {
+                        <div class="alert alert-success">@status</div>
+                    }
+                    @RenderBody()
+                </main>
+            }
+            else
+            {
+                <main class="col-12">
+                    @RenderBody()
+                </main>
+            }
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

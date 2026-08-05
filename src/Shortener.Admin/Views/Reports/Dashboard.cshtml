@@ -1,0 +1,78 @@
+@using Shortener.Application.Services
+@model Shortener.Admin.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "داشبورد";
+    var maxTrendValue = Math.Max(1, Model.Trend.Count == 0 ? 1 : Model.Trend.Max(t => Math.Max(t.LinksCreated, t.Downloads)));
+}
+<h3 class="mb-3">داشبورد (۷ روز اخیر)</h3>
+
+@if (Model.DiskUsedPercent > Model.DiskRejectThresholdPercent)
+{
+    <div class="alert alert-danger">فضای دیسک @Model.DiskUsedPercent.ToString("N1")٪ پر است — بارگذاری فایل جدید مسدود شده است (بیش از @Model.DiskRejectThresholdPercent.ToString("N0")٪).</div>
+}
+else if (Model.DiskUsedPercent >= Model.DiskWarningThresholdPercent)
+{
+    <div class="alert alert-warning">فضای دیسک @Model.DiskUsedPercent.ToString("N1")٪ پر است — به آستانه هشدار (@Model.DiskWarningThresholdPercent.ToString("N0")٪) نزدیک می‌شود.</div>
+}
+@if (Model.MissingOnDiskAlerts > 0)
+{
+    <div class="alert alert-danger">@Model.MissingOnDiskAlerts رکورد فایل «فعال» در پایگاه داده یافت شد که روی دیسک وجود ندارد (طی هفت روز اخیر). جزئیات را در لاگ سرور Worker بررسی کنید.</div>
+}
+
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">لینک ساخته‌شده</div><div class="fs-4">@Model.LinksCreated</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">نرخ کلیک</div><div class="fs-4">@Model.ClickRatePercent%</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">نرخ دانلود موفق</div><div class="fs-4">@Model.DownloadSuccessRatePercent%</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">نرخ تحویل پیامک</div><div class="fs-4">@Model.DeliveryRatePercent%</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">پیامک لینک ارسالی</div><div class="fs-4">@Model.LinkSmsSent</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">پیامک OTP ارسالی</div><div class="fs-4">@Model.OtpSmsSent</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">پیامک ناموفق</div><div class="fs-4 text-danger">@Model.FailedSmsCount</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">فضای اشغالی</div><div class="fs-4">@((Model.SpaceUsedBytes / 1024.0 / 1024.0).ToString("N1")) MB</div></div></div></div>
+    <div class="col"><div class="card"><div class="card-body"><div class="text-muted small">فایل در آستانه انقضا (۷ روز)</div><div class="fs-4">@Model.FilesNearingExpiry</div></div></div></div>
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">تأخیر صف OTP</div>
+                <div class="fs-4">
+                    @if (Model.OtpQueueLagSeconds is { } lag)
+                    {
+                        <span class="@(lag > 30 ? "text-danger" : "text-success")">@lag.ToString("N1") ثانیه</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">روند ۳۰ روزه</h5>
+        <svg viewBox="0 0 600 160" style="width:100%; max-width:800px; height:160px;" role="img" aria-label="نمودار روند ۳۰ روزه">
+            @{
+                var barWidth = 600.0 / Model.Trend.Count;
+            }
+            @for (var i = 0; i < Model.Trend.Count; i++)
+            {
+                var point = Model.Trend[i];
+                var linkHeight = point.LinksCreated * 130.0 / maxTrendValue;
+                var downloadHeight = point.Downloads * 130.0 / maxTrendValue;
+                var x = i * barWidth;
+                <rect x="@x.ToString("F1")" y="@((140 - linkHeight).ToString("F1"))" width="@((barWidth / 2 - 1).ToString("F1"))" height="@(linkHeight.ToString("F1"))" fill="#0d6efd">
+                    <title>@PersianDateHelper.ToPersianDate(point.DateUtc): @point.LinksCreated لینک</title>
+                </rect>
+                <rect x="@((x + barWidth / 2).ToString("F1"))" y="@((140 - downloadHeight).ToString("F1"))" width="@((barWidth / 2 - 1).ToString("F1"))" height="@(downloadHeight.ToString("F1"))" fill="#198754">
+                    <title>@PersianDateHelper.ToPersianDate(point.DateUtc): @point.Downloads دانلود</title>
+                </rect>
+            }
+            <line x1="0" y1="140" x2="600" y2="140" stroke="#ccc" stroke-width="1" />
+        </svg>
+        <div class="small text-muted mt-2">
+            <span style="color:#0d6efd">■</span> لینک ساخته‌شده &nbsp;
+            <span style="color:#198754">■</span> دانلود
+        </div>
+    </div>
+</div>

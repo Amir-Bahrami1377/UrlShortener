@@ -1,0 +1,68 @@
+@using Shortener.Application.Services
+@model Shortener.Admin.Models.LinksReportViewModel
+@{
+    ViewData["Title"] = "گزارش لینک‌ها";
+}
+<h3 class="mb-3">گزارش لینک‌ها</h3>
+
+<form method="get" class="row row-cols-lg-auto g-2 align-items-end mb-3">
+    <div class="col"><label class="form-label small">از تاریخ (شمسی)</label><input name="FromDate" value="@Model.Filter.FromDate" class="form-control form-control-sm" placeholder="1405/01/01" /></div>
+    <div class="col"><label class="form-label small">تا تاریخ (شمسی)</label><input name="ToDate" value="@Model.Filter.ToDate" class="form-control form-control-sm" placeholder="1405/12/29" /></div>
+    <div class="col">
+        <label class="form-label small">کلاینت</label>
+        <select name="ClientId" class="form-select form-select-sm">
+            <option value="">همه</option>
+            @foreach (var c in Model.Clients)
+            {
+                <option value="@c.Id" selected="@(Model.Filter.ClientId == c.Id)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col"><label class="form-label small">RequestId</label><input name="RequestId" value="@Model.Filter.RequestId" class="form-control form-control-sm" /></div>
+    <div class="col"><label class="form-label small">کد</label><input name="Code" value="@Model.Filter.Code" class="form-control form-control-sm" /></div>
+    <div class="col"><label class="form-label small">شماره پرونده (Shop)</label><input name="Shop" value="@Model.Filter.Shop" class="form-control form-control-sm" /></div>
+    <div class="col"><label class="form-label small">شماره تلفن</label><input name="PhoneNumber" value="@Model.Filter.PhoneNumber" class="form-control form-control-sm" /></div>
+    <div class="col"><label class="form-label small">BatchTag</label><input name="BatchTag" value="@Model.Filter.BatchTag" class="form-control form-control-sm" /></div>
+    <div class="col">
+        <label class="form-label small">وضعیت</label>
+        <select name="Status" class="form-select form-select-sm">
+            <option value="">همه</option>
+            <option value="Active" selected="@(Model.Filter.Status == "Active")">فعال</option>
+            <option value="Inactive" selected="@(Model.Filter.Status == "Inactive")">غیرفعال</option>
+        </select>
+    </div>
+    <div class="col"><button type="submit" class="btn btn-primary btn-sm">فیلتر</button></div>
+    <div class="col"><a class="btn btn-outline-success btn-sm" href="@Url.Action("ExportLinks")@Context.Request.QueryString">خروجی Excel</a></div>
+</form>
+
+<p class="text-muted small">تعداد کل نتایج: @Model.TotalCount (حداکثر ۱۰۰ نتیجه اول نمایش داده می‌شود؛ برای همه نتایج از خروجی Excel استفاده کنید)</p>
+
+<div class="table-responsive">
+<table class="table table-striped table-sm align-middle">
+    <thead>
+        <tr>
+            <th>کد</th><th>کلاینت</th><th>پرونده</th><th>نام گزارش</th><th>شماره</th>
+            <th>تاریخ ایجاد</th><th>انقضا</th><th>OTP</th><th>دانلود</th><th>وضعیت پیامک</th><th>وضعیت فایل</th><th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model.Rows)
+        {
+            <tr>
+                <td><code>@row.Code</code></td>
+                <td>@row.ClientName</td>
+                <td>@row.Shop/@row.Shod/@row.Radif</td>
+                <td>@row.ReportName</td>
+                <td>@row.MaskedPhone</td>
+                <td>@row.CreatedAt.ToPersianDateTime()</td>
+                <td>@row.ExpiresAt.ToPersianDate()</td>
+                <td>@row.OtpRequestCount</td>
+                <td>@row.DownloadCount</td>
+                <td>@row.SmsStatus</td>
+                <td>@row.FileStatus</td>
+                <td><a class="btn btn-sm btn-outline-secondary" asp-action="LinkDetail" asp-route-requestId="@row.RequestId">جزئیات</a></td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>

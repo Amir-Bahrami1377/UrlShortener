@@ -1,0 +1,74 @@
+@model Shortener.Admin.Models.SmsAccountListViewModel
+@{
+    ViewData["Title"] = "حساب‌های پیامکی";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>حساب‌های پیامکی — @Model.ClientName</h3>
+    <a class="btn btn-primary" asp-action="Create" asp-route-clientId="@Model.ClientId">ایجاد حساب جدید</a>
+</div>
+<a asp-controller="Clients" asp-action="Index" class="d-inline-block mb-3">&rarr; بازگشت به کلاینت‌ها</a>
+
+@{
+    var hasBulk = Model.Accounts.Any(a => a.Purpose == "Bulk" && a.IsActive);
+    var hasOtp = Model.Accounts.Any(a => a.Purpose == "Otp" && a.IsActive);
+}
+@if (!hasBulk || !hasOtp)
+{
+    <div class="alert alert-danger">
+        این کلاینت باید هم حساب <strong>انبوه (Bulk)</strong> و هم حساب <strong>OTP</strong> فعال داشته باشد.
+        @(hasBulk ? "" : " حساب انبوه وجود ندارد.") @(hasOtp ? "" : " حساب OTP وجود ندارد.")
+    </div>
+}
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>عنوان</th>
+            <th>Provider</th>
+            <th>هدف</th>
+            <th>پیش‌فرض</th>
+            <th>وضعیت</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var account in Model.Accounts)
+        {
+            <tr>
+                <td>@account.Title</td>
+                <td>@account.ProviderName</td>
+                <td>@(account.Purpose == "Bulk" ? "انبوه" : "OTP")</td>
+                <td>@(account.IsDefault ? "بله" : "—")</td>
+                <td>
+                    @if (account.IsActive)
+                    {
+                        <span class="badge bg-success">فعال</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">غیرفعال</span>
+                    }
+                </td>
+                <td>
+                    <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@account.Id">ویرایش</a>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#test-@account.Id">
+                        تست ارسال
+                    </button>
+                    <form asp-action="CheckCredit" method="post" class="d-inline">
+                        <input type="hidden" name="id" value="@account.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">بررسی اعتبار</button>
+                    </form>
+                </td>
+            </tr>
+            <tr class="collapse" id="test-@account.Id">
+                <td colspan="6">
+                    <form asp-action="TestSend" method="post" class="d-flex gap-2 align-items-center">
+                        <input type="hidden" name="id" value="@account.Id" />
+                        <input type="text" name="testPhoneNumber" class="form-control" style="max-width:220px" placeholder="09121234567" required />
+                        <button type="submit" class="btn btn-sm btn-primary">ارسال پیامک آزمایشی</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
