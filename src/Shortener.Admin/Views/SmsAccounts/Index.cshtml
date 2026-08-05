@@ -20,6 +20,7 @@
     </div>
 }
 
+<div class="table-responsive">
 <table class="table table-striped align-middle">
     <thead>
         <tr>
@@ -49,7 +50,7 @@
                         <span class="badge bg-secondary">غیرفعال</span>
                     }
                 </td>
-                <td>
+                <td class="text-nowrap">
                     <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@account.Id">ویرایش</a>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#test-@account.Id">
                         تست ارسال
@@ -72,3 +73,4 @@
         }
     </tbody>
 </table>
+</div>

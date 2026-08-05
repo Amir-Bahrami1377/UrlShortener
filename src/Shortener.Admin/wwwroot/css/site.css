@@ -1,5 +1,46 @@
+/*
+  Admin console theme — "signal": a quiet operations instrument for monitoring SMS delivery,
+  link/download health, and queue status. Cool paper background, ink text, one deliberate accent
+  (a deep teal, standing in for "signal/transmission" rather than Bootstrap's default blue), status
+  communicated by small dots rather than saturated badge fills, and a monospace face reserved for
+  data (codes, phone numbers, ids, dates) so it reads distinctly from UI chrome at a glance.
+*/
+
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("../lib/vazirmatn/Vazirmatn-Variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --ink: #14181f;
+  --ink-soft: #3a4150;
+  --muted: #667085;
+  --paper: #f5f6f4;
+  --surface: #ffffff;
+  --line: #e2e5e0;
+  --line-strong: #cdd2cb;
+
+  --signal: #0e7c86;
+  --signal-ink: #08464d;
+  --signal-soft: #e3f1f1;
+
+  --good: #2f7a4f;
+  --good-soft: #e7f3ec;
+  --warn: #b5751b;
+  --warn-soft: #faf0e0;
+  --danger: #b23a3a;
+  --danger-soft: #f8e9e9;
+
+  --radius: 8px;
+  --radius-sm: 5px;
+  --font-ui: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+}
+
 html {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 @media (min-width: 768px) {
@@ -8,24 +49,284 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
 body {
-  margin-bottom: 60px;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--signal-ink);
+}
+
+a:hover {
+  color: var(--signal);
+}
+
+code, .mono, .table td[data-mono], .badge-code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+code {
+  color: var(--ink-soft);
+  background: var(--line);
+  padding: 0.1em 0.4em;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--signal-soft);
+  color: var(--signal-ink);
+}
+
+/* Focus ring — visible keyboard focus everywhere, one consistent treatment */
+.btn:focus-visible,
+.btn:focus,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus,
+.nav-link:focus-visible,
+a:focus-visible {
+  box-shadow: 0 0 0 3px var(--signal-soft), 0 0 0 1px var(--signal);
+  outline: none;
+}
+
+/* ---------- Shell: top bar + sidebar ---------- */
+
+.app-topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding-block: 0.75rem;
+}
+
+.app-topbar .navbar-brand {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.app-topbar .navbar-text {
+  color: var(--muted) !important;
+  font-size: 0.9rem;
+}
+
+.app-topbar .btn-outline-light {
+  --bs-btn-color: var(--ink-soft);
+  --bs-btn-border-color: var(--line-strong);
+  --bs-btn-hover-bg: var(--paper);
+  --bs-btn-hover-color: var(--ink);
+  --bs-btn-hover-border-color: var(--line-strong);
+}
+
+.sidebar {
+  min-height: calc(100vh - 61px);
+  background: var(--paper);
+  border-inline-start: 1px solid var(--line);
+  padding-inline-end: 0.5rem;
+}
+
+.sidebar .nav-link {
+  color: var(--ink-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.85rem;
+  margin-block-end: 0.15rem;
+  font-size: 0.925rem;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.sidebar .nav-link:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.sidebar .nav-link.active {
+  background: var(--signal-soft);
+  color: var(--signal-ink);
+  font-weight: 600;
+}
+
+.sidebar hr {
+  border-color: var(--line);
+  margin: 0.75rem 0.85rem;
+}
+
+main {
+  padding: 1.75rem;
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ---------- Instrument tiles (dashboard KPIs) — the one signature moment ---------- */
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+
+.tile .tile-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-block-end: 0.35rem;
+}
+
+.tile .tile-value {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.tile .tile-value.is-good { color: var(--good); }
+.tile .tile-value.is-warn { color: var(--warn); }
+.tile .tile-value.is-danger { color: var(--danger); }
+
+/* ---------- Tables ---------- */
+
+.table {
+  --bs-table-bg: transparent;
+  color: var(--ink);
+}
+
+.table > thead {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.table > thead th {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-block: 0.6rem;
+  border: none;
+}
+
+.table > tbody td {
+  border-color: var(--line);
+  padding-block: 0.65rem;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-accent-bg: var(--paper);
+}
+
+/* ---------- Status: small dots instead of saturated badge fills ---------- */
+
+.badge {
+  font-weight: 500;
+  font-size: 0.8rem;
+  padding: 0.35em 0.65em;
+  border-radius: 999px;
+}
+
+.badge.bg-success { background: var(--good-soft) !important; color: var(--good) !important; }
+.badge.bg-danger  { background: var(--danger-soft) !important; color: var(--danger) !important; }
+.badge.bg-secondary { background: var(--line) !important; color: var(--ink-soft) !important; }
+.badge.bg-warning { background: var(--warn-soft) !important; color: var(--warn) !important; }
+.badge.bg-info { background: var(--signal-soft) !important; color: var(--signal-ink) !important; }
+
+.status-dot {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  margin-inline-end: 0.45em;
+  background: currentcolor;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--signal);
+  --bs-btn-border-color: var(--signal);
+  --bs-btn-hover-bg: var(--signal-ink);
+  --bs-btn-hover-border-color: var(--signal-ink);
+  --bs-btn-active-bg: var(--signal-ink);
+  --bs-btn-active-border-color: var(--signal-ink);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--ink-soft);
+  --bs-btn-border-color: var(--line-strong);
+  --bs-btn-hover-bg: var(--paper);
+  --bs-btn-hover-color: var(--ink);
+  --bs-btn-hover-border-color: var(--line-strong);
+}
+
+/* ---------- Forms ---------- */
+
+.form-control, .form-select {
+  border-color: var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--signal);
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+/* ---------- Alerts ---------- */
+
+.alert {
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.alert-success { background: var(--good-soft); color: var(--good); border-color: var(--good-soft); }
+.alert-danger  { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
+.alert-warning { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-soft); }
+
+/* ---------- Motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar .nav-link {
+    transition: none;
+  }
 }

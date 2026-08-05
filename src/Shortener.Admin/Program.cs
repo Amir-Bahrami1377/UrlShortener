@@ -88,7 +88,12 @@ app.UseAuthorization();
 
 app.MapSystemHealthChecks();
 app.MapShortenerMetrics();
-app.MapStaticAssets();
+// MapStaticAssets registers endpoints, unlike the old UseStaticFiles middleware — endpoints fall
+// under the global RequireAuthenticatedUser() fallback policy above unless explicitly exempted.
+// Without this, even the login page's own CSS/JS 302-redirected to itself (confirmed live: a real
+// browser loading /Account/Login got "MIME type text/html" errors for every stylesheet/script, since
+// each request bounced through the login redirect instead of serving the file).
+app.MapStaticAssets().AllowAnonymous();
 app.MapControllerRoute(
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}")
