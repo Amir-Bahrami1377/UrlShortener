@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/.vs/
+**/App_Data/
+.git/
+.github/
+.claude/
+.agents/
+.playwright-mcp/
+tests/
+IMPLEMENTATION_PLAN.md
+*.md
+coverage.runsettings
+docker-compose*.yml
