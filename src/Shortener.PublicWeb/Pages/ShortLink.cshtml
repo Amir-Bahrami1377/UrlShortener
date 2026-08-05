@@ -1,0 +1,247 @@
+@page "/s/{code}"
+@using Shortener.Infrastructure.Security
+@model Shortener.PublicWeb.Pages.ShortLinkModel
+@{
+    Layout = null;
+    var cspNonce = HttpContext.Items[ContentSecurityPolicyMiddleware.NonceItemKey];
+}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>دریافت فایل</title>
+    <style nonce="@cspNonce">
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: Tahoma, "Segoe UI", sans-serif;
+            background: #f4f5f7;
+            margin: 0;
+            padding: 24px 16px;
+            display: flex;
+            justify-content: center;
+            color: #1f2430;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            padding: 32px 24px;
+            max-width: 420px;
+            width: 100%;
+        }
+        h1 { font-size: 1.15rem; margin: 0 0 8px; }
+        p { line-height: 1.8; color: #444; }
+        .muted { color: #777; font-size: .9rem; }
+        button {
+            font-family: inherit;
+            font-size: 1rem;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        button.secondary { background: transparent; color: #2563eb; border: 1px solid #2563eb; margin-top: 8px; }
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .otp-inputs { display: flex; gap: 8px; justify-content: center; margin: 20px 0; direction: ltr; }
+        .otp-inputs input {
+            width: 42px; height: 52px; text-align: center; font-size: 1.4rem;
+            border: 1px solid #ccc; border-radius: 8px;
+        }
+        .otp-inputs input:focus { outline: 2px solid #2563eb; border-color: #2563eb; }
+        .timer { text-align: center; font-size: .95rem; color: #555; margin: 8px 0; }
+        .hidden { display: none; }
+        noscript .js-only { display: none; }
+    </style>
+</head>
+<body>
+<div class="card">
+    @if (!Model.IsHealthy)
+    {
+        <h1>@Model.ErrorTitle</h1>
+        @if (Model.LockedUntilUtc is { } lockedUntil)
+        {
+            <p class="muted">
+                لطفاً پس از پایان مدت قفل دوباره تلاش کنید (تا
+                <span id="locked-until" data-until="@lockedUntil.ToString("O")">چند دقیقه دیگر</span>).
+            </p>
+        }
+    }
+    else
+    {
+        <h1>دریافت فایل: @Model.ReportName</h1>
+        <p class="muted">پیامکی حاوی کد تأیید به شماره @Model.MaskedPhone ارسال خواهد شد.</p>
+
+        <div id="step-request">
+            <button type="button" id="btn-send-otp">ارسال کد تأیید</button>
+        </div>
+
+        <div id="step-verify" class="hidden">
+            <p>کد شش رقمی ارسال‌شده را وارد کنید:</p>
+            <div class="otp-inputs js-only" id="otp-boxes">
+                <input inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" />
+                <input inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+                <input inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+                <input inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+                <input inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+                <input inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+            </div>
+            <div class="timer" id="ttl-timer"></div>
+            <button type="button" id="btn-verify-otp">تأیید کد</button>
+            <button type="button" id="btn-resend-otp" class="secondary" disabled>ارسال مجدد کد</button>
+        </div>
+
+        <noscript>
+            <p class="error-box">
+                برای دریافت و وارد کردن کد تأیید در این نسخه از صفحه به جاوااسکریپت نیاز است.
+                لطفاً جاوااسکریپت مرورگر خود را فعال کنید.
+            </p>
+        </noscript>
+
+        <div id="message-box" class="hidden"></div>
+    }
+</div>
+
+@if (Model.IsHealthy)
+{
+    <script nonce="@cspNonce">
+        (function () {
+            const code = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Code));
+            const btnSend = document.getElementById('btn-send-otp');
+            const btnVerify = document.getElementById('btn-verify-otp');
+            const btnResend = document.getElementById('btn-resend-otp');
+            const stepRequest = document.getElementById('step-request');
+            const stepVerify = document.getElementById('step-verify');
+            const messageBox = document.getElementById('message-box');
+            const ttlTimer = document.getElementById('ttl-timer');
+            const boxes = Array.from(document.querySelectorAll('#otp-boxes input'));
+
+            let ttlInterval = null;
+            let cooldownInterval = null;
+
+            function showMessage(text, isError) {
+                messageBox.textContent = text;
+                messageBox.className = isError ? 'error-box' : '';
+                messageBox.classList.remove('hidden');
+            }
+
+            function startCountdown(el, seconds, onExpire, label) {
+                let remaining = seconds;
+                el.textContent = label(remaining);
+                return setInterval(() => {
+                    remaining -= 1;
+                    if (remaining <= 0) {
+                        clearInterval(ttlInterval);
+                        if (onExpire) onExpire();
+                        el.textContent = '';
+                        return;
+                    }
+                    el.textContent = label(remaining);
+                }, 1000);
+            }
+
+            function focusFirstEmpty() {
+                const firstEmpty = boxes.find(b => !b.value);
+                (firstEmpty || boxes[boxes.length - 1]).focus();
+            }
+
+            boxes.forEach((box, i) => {
+                box.addEventListener('input', () => {
+                    box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+                    if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+                });
+                box.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus();
+                });
+                box.addEventListener('paste', (e) => {
+                    const text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                    if (text.length > 1) {
+                        e.preventDefault();
+                        text.split('').slice(0, boxes.length).forEach((ch, idx) => { boxes[idx].value = ch; });
+                        focusFirstEmpty();
+                    }
+                });
+            });
+
+            async function requestOtp() {
+                btnSend.disabled = true;
+                messageBox.classList.add('hidden');
+                try {
+                    const res = await fetch(`/s/${code}/otp/request`, { method: 'POST' });
+                    const body = await res.json();
+                    if (!res.ok) {
+                        showMessage(body.detail || body.title || 'ارسال کد ممکن نشد.', true);
+                        btnSend.disabled = false;
+                        return;
+                    }
+
+                    stepRequest.classList.add('hidden');
+                    stepVerify.classList.remove('hidden');
+                    boxes.forEach(b => b.value = '');
+                    boxes[0].focus();
+
+                    ttlInterval = startCountdown(ttlTimer, body.ttlSeconds, () => showMessage('کد منقضی شد؛ کد جدید درخواست کنید.', true),
+                        (s) => `اعتبار کد: ${s} ثانیه`);
+
+                    btnResend.disabled = true;
+                    cooldownInterval = startCountdown(btnResend, body.cooldownSeconds, () => {
+                        btnResend.disabled = false;
+                        btnResend.textContent = 'ارسال مجدد کد';
+                    }, (s) => `ارسال مجدد (${s})`);
+                } catch {
+                    showMessage('خطا در ارتباط با سرور.', true);
+                    btnSend.disabled = false;
+                }
+            }
+
+            async function verifyOtp() {
+                const otp = boxes.map(b => b.value).join('');
+                if (otp.length !== boxes.length) {
+                    showMessage('لطفاً کد شش‌رقمی را کامل وارد کنید.', true);
+                    return;
+                }
+
+                btnVerify.disabled = true;
+                messageBox.classList.add('hidden');
+                try {
+                    const res = await fetch(`/s/${code}/otp/verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ otp }),
+                    });
+                    const body = await res.json();
+                    if (!res.ok) {
+                        showMessage(body.detail || body.title || 'کد نادرست است.', true);
+                        btnVerify.disabled = false;
+                        boxes.forEach(b => b.value = '');
+                        boxes[0].focus();
+                        return;
+                    }
+
+                    window.location.href = body.downloadUrl;
+                } catch {
+                    showMessage('خطا در ارتباط با سرور.', true);
+                    btnVerify.disabled = false;
+                }
+            }
+
+            btnSend.addEventListener('click', requestOtp);
+            btnVerify.addEventListener('click', verifyOtp);
+            btnResend.addEventListener('click', requestOtp);
+        })();
+    </script>
+}
+</body>
+</html>
