@@ -1,0 +1,94 @@
+# GitLab CI/CD pipeline for UrlShortener.
+#
+# Mirrors what .github/workflows/ci.yml already does (restore/build/test) and adds two things it
+# doesn't: a real integration-test stage (Testcontainers-backed, needs Docker-in-Docker) and a
+# docker-build/push stage to the project's own GitLab Container Registry.
+#
+# Runner requirement: the integration-tests job needs a GitLab Runner with the Docker executor in
+# *privileged* mode (config.toml: `privileged = true`) so the docker:dind service can start — that's
+# what lets Testcontainers spin up its own ephemeral SQL Server/Redis containers per run (see
+# tests/Shortener.IntegrationTests/ApiTestFixture.cs). GitLab.com's shared runners support this out
+# of the box; a self-hosted runner needs it enabled explicitly. Written to GitLab's documented
+# DinD + Testcontainers pattern but not yet run against a live pipeline (this repo currently has no
+# GitLab remote) — if TESTCONTAINERS_HOST_OVERRIDE below turns out not to be needed (or not enough)
+# on your runner, that's the first thing to check.
+
+stages:
+  - build
+  - test
+  - package
+
+variables:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  NUGET_PACKAGES: "$CI_PROJECT_DIR/.nuget/packages"
+
+default:
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  cache:
+    key:
+      files:
+        - "**/*.csproj"
+    paths:
+      - .nuget/packages/
+
+build:
+  stage: build
+  script:
+    - dotnet restore UrlShortener.slnx
+    - dotnet build UrlShortener.slnx --no-restore --configuration Release
+
+unit-tests:
+  stage: test
+  needs: ["build"]
+  script:
+    - dotnet test tests/Shortener.UnitTests/Shortener.UnitTests.csproj
+        --configuration Release
+        --logger "trx;LogFileName=unit-test-results.trx"
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - "**/unit-test-results.trx"
+
+integration-tests:
+  stage: test
+  needs: ["build"]
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: "docker"
+  script:
+    - dotnet test tests/Shortener.IntegrationTests/Shortener.IntegrationTests.csproj
+        --configuration Release
+        --logger "trx;LogFileName=integration-test-results.trx"
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - "**/integration-test-results.trx"
+
+# Builds and pushes all 4 host images to this project's GitLab Container Registry
+# ($CI_REGISTRY_IMAGE) — credentials and registry host are provided automatically by GitLab, no
+# manual secret setup needed. Only runs on the default branch; feature branches/MRs stop after test.
+docker-build:
+  stage: package
+  image: docker:24
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - |
+      for app in Api Admin PublicWeb Worker; do
+        name=$(echo "$app" | tr '[:upper:]' '[:lower:]')
+        image="$CI_REGISTRY_IMAGE/$name"
+        docker build -f "src/Shortener.$app/Dockerfile" -t "$image:$CI_COMMIT_SHORT_SHA" -t "$image:latest" .
+        docker push "$image:$CI_COMMIT_SHORT_SHA"
+        docker push "$image:latest"
+      done
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
