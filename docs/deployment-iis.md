@@ -28,6 +28,33 @@ shared across sites. A crash or memory issue in one app must not recycle the oth
   managed pipeline must stay out of the way.
 - `IIS_IUSRS` and each pool identity need read/execute on the app's publish folder.
 
+## HTTPS / SSL bindings
+
+Doc §M8.5 requires HTTPS + HSTS everywhere; Appendix C lists procuring an SSL certificate for the
+production domain as an organizational prerequisite. On IIS, TLS is terminated by **IIS itself**
+via each site's HTTPS binding — unlike the Docker path (`docker-compose.yml`), which puts Caddy in
+front of the apps as a separate reverse proxy (see `./Caddyfile`), there's no separate proxy layer
+here, so no `UseForwardedHeadersForReverseProxy()`-style config is needed on the IIS path; each
+app's own `UseHsts()`/`UseHttpsRedirection()` (already unconditional outside Development) works
+against the connection IIS hands it directly.
+
+1. Install the certificate into the server's certificate store (**Local Computer > Personal**) —
+   via IIS Manager's own **Server Certificates** feature (import a `.pfx`), or `certutil`/PowerShell's
+   `Import-PfxCertificate` for automation.
+2. In IIS Manager, add an **https** binding on port 443 to each of the three sites (`Api`, `Admin`,
+   `PublicWeb`), selecting that certificate. Use distinct hostnames (SNI) per site if they share one
+   IP, matching whatever DNS names Appendix C's certificate actually covers.
+3. Add an **http** binding on port 80 too, then redirect it to https — either an IIS URL Rewrite
+   rule, or rely on the app's own `UseHttpsRedirection()` (already active); URL Rewrite is cheaper
+   since it avoids round-tripping into the .NET pipeline just to redirect.
+4. Confirm `UseHsts()` is actually taking effect once real traffic hits it — `Strict-Transport-
+   Security` should be present on the response headers of a plain `curl -I https://<site>` from
+   outside the box.
+
+`Admin`'s binding should still only be reachable from the internal network/VPN (doc §M8.5) — a
+valid HTTPS binding doesn't change that requirement, it's still a network/firewall-level control
+(same caveat as the Docker path's Caddyfile).
+
 ## Publish
 
 ```powershell

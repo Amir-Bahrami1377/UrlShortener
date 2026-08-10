@@ -46,6 +46,7 @@ using (var baselineScope = app.Services.CreateScope())
 
 if (!app.Environment.IsDevelopment())
 {
+    app.UseForwardedHeadersForReverseProxy();
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }

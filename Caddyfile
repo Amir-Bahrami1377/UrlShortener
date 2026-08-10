@@ -1,0 +1,29 @@
+# TLS termination for the Docker Compose production stack (docker-compose.yml). Caddy is the only
+# service that publishes ports to the host (80/443); api/admin/publicweb are internal-only on the
+# Docker network and reachable exclusively through here. Worker isn't routed here at all — it has no
+# HTTPS middleware (see its Program.cs), it's an internal background-services host.
+#
+# Domains and TLS mode come from .env (see .env.example). Defaults work out of the box for local
+# verification: *.localhost with Caddy's own internal CA (self-signed — browsers will warn, that's
+# expected). For a real deployment, set real domain names in .env and set CADDY_TLS_MODE to a real
+# email address, which switches every site below to automatic Let's Encrypt.
+#
+# ADMIN_DOMAIN being reachable through this Caddyfile does NOT satisfy IMPLEMENTATION_PLAN.md
+# §M8.5's "Admin must never be exposed to the public internet" requirement by itself — that's a
+# network-level decision (firewall/VPN/security group in front of ports 80/443), same caveat already
+# called out in src/Shortener.Admin/Dockerfile. Restrict access to admin.* at the network layer.
+
+{$PUBLICWEB_DOMAIN:localhost} {
+	tls {$CADDY_TLS_MODE:internal}
+	reverse_proxy publicweb:8080
+}
+
+{$API_DOMAIN:api.localhost} {
+	tls {$CADDY_TLS_MODE:internal}
+	reverse_proxy api:8080
+}
+
+{$ADMIN_DOMAIN:admin.localhost} {
+	tls {$CADDY_TLS_MODE:internal}
+	reverse_proxy admin:8080
+}

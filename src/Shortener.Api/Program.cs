@@ -82,6 +82,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    app.UseForwardedHeadersForReverseProxy();
     app.UseHsts();
 }
 

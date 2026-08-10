@@ -8,6 +8,11 @@
 # verification; every one of them MUST be overridden via a real secret store before this goes near a
 # real deployment (see the SQL_SA_PASSWORD / OTP_HMAC_SECRET / DATA_PROTECTION_* comments).
 #
+# TLS: api/admin/publicweb no longer publish host ports directly — Caddy is the sole public entry
+# point (80/443), terminates TLS, and reverse-proxies to each app over the internal network in plain
+# HTTP (that's why each app needs UseForwardedHeadersForReverseProxy(), see their Program.cs). See
+# ./Caddyfile and .env.example for the domain/CADDY_TLS_MODE variables this depends on.
+#
 # Explicit project name: without this, Compose defaults the project name to the directory name —
 # the same default docker-compose.dev.yml resolves to. Running this file previously replaced (not
 # merely stopped) the dev sqlserver/redis containers because both files ended up wanting the same
@@ -42,7 +47,6 @@ services:
 
   api:
     build: { context: ., dockerfile: src/Shortener.Api/Dockerfile }
-    ports: [ "8081:8080" ]
     environment:
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${SQL_SA_PASSWORD:-Change_Me_Before_Prod1};TrustServerCertificate=True"
       ConnectionStrings__Redis: "redis:6379"
@@ -54,7 +58,6 @@ services:
 
   admin:
     build: { context: ., dockerfile: src/Shortener.Admin/Dockerfile }
-    ports: [ "8082:8080" ]
     environment:
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${SQL_SA_PASSWORD:-Change_Me_Before_Prod1};TrustServerCertificate=True"
       ConnectionStrings__Redis: "redis:6379"
@@ -66,7 +69,6 @@ services:
 
   publicweb:
     build: { context: ., dockerfile: src/Shortener.PublicWeb/Dockerfile }
-    ports: [ "8083:8080" ]
     environment:
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${SQL_SA_PASSWORD:-Change_Me_Before_Prod1};TrustServerCertificate=True"
       ConnectionStrings__Redis: "redis:6379"
@@ -92,6 +94,24 @@ services:
       redis: { condition: service_healthy }
     restart: unless-stopped
 
+  caddy:
+    image: caddy:2-alpine
+    ports: [ "80:80", "443:443" ]
+    environment:
+      PUBLICWEB_DOMAIN: "${PUBLICWEB_DOMAIN:-localhost}"
+      API_DOMAIN: "${API_DOMAIN:-api.localhost}"
+      ADMIN_DOMAIN: "${ADMIN_DOMAIN:-admin.localhost}"
+      # "internal" = Caddy's own self-signed CA (fine for local verification, browsers will warn).
+      # A real email address here switches every site in ./Caddyfile to automatic Let's Encrypt —
+      # only do that once PUBLICWEB_DOMAIN/API_DOMAIN/ADMIN_DOMAIN are real, publicly-resolving names.
+      CADDY_TLS_MODE: "${CADDY_TLS_MODE:-internal}"
+    volumes:
+      - "./Caddyfile:/etc/caddy/Caddyfile:ro"
+      - "caddydata:/data"
+      - "caddyconfig:/config"
+    depends_on: [ api, admin, publicweb ]
+    restart: unless-stopped
+
 volumes:
   sqldata:
   redisdata:
@@ -100,3 +120,5 @@ volumes:
   adminlogs:
   publicweblogs:
   workerlogs:
+  caddydata:
+  caddyconfig:

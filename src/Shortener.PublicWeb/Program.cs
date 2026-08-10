@@ -44,6 +44,7 @@ app.Services.GetRequiredService<ShortenerMetrics>();
 
 if (!app.Environment.IsDevelopment())
 {
+    app.UseForwardedHeadersForReverseProxy();
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
